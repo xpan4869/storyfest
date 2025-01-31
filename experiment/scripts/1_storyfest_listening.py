@@ -1,8 +1,6 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu)
-# Last Edited: May 8, 2024
-# Description: Task script adopted from Kannon Bhattacharyya and Zishan Su.
-# The script continuously records eyetracking data while showing visual 
-# stimulus and recording verbal responses.
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: January 31, 2025
+# Description: This script is used to run the listening portion of the StoryFest experiment.
 
 #--------------------------------- Import ---------------------------------#
 from __future__ import absolute_import, division, print_function
@@ -38,12 +36,6 @@ ET = 1
 # 0=No kill switch, 1=Yes kill switch
 # ====================================
 KS = 1
-
-# =============================
-# Toggle voice recording:
-# 0=Don't record, 1=Record
-# =============================
-REC = 1
 
 #------------------------------- Initialize -------------------------------#
 
@@ -109,25 +101,9 @@ df = {'id': [expInfo['participant']]}
 dfTimeStamps = pd.DataFrame(df)  
 
 # Save df to csv
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)
+dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)
 
 #------------------------- Experiment Settings ----------------------------#
-
-# =================
-# Microphone setup
-# =================
-
-if REC == 1: 
-    recordingDevicesList = Microphone.getDevices()
-    device=recordingDevicesList[0] # Double check that this corresponds to the external mic!
-    mic = Microphone(streamBufferSecs=3000.0,
-                        sampleRateHz=48000,
-                        device=recordingDevicesList[0],
-                        channels=1,
-                        maxRecordingSize=300000,
-                        audioRunMode=0
-    )
-
 
 # ================
 # Eyetracker setup
@@ -329,44 +305,6 @@ breakInstructions = visual.TextStim(
     wrapWidth=win.size[0] * 0.7
 )
 
-# Instruction: Record intro
-recordIntroInstructions = visual.TextStim(
-    win=win,
-    name='instrRecordIntro',
-    text="Now, we would like you to recount, in your own words, \nthe events of the stories in the original order they were experienced in, with as much detail as possible. \n\nSpeak for at least 20 min if possible -- but the longer the better. \n\nPlease verbally indicate when you are finished by saying, for example, \"I'm done.\" \n\n\n Press ENTER to continue.",
-    font='Arial',
-    pos=[0, 0], height=36, color='black', units='pix', colorSpace='rgb',
-    wrapWidth=win.size[0] * 0.9
-)
-
-recordReadyInstructions = visual.TextStim(
-    win=win,
-    name='instrRecordReady',
-    text="Completeness and detail are more important than temporal order. \n\nIf at any point you realize that you missed something, feel free to return to it. \n\n\n Press ENTER to continue.",
-    font='Arial',
-    pos=[0, 0], height=36, color='black', units='pix', colorSpace='rgb',
-    wrapWidth=win.size[0] * 0.9
-)
-
-recordBeginInstructions = visual.TextStim(
-    win=win,
-    name='instrRecordBegin',
-    text="When you press ENTER to begin the recording portion of the experiment, the microphone will automatically turn on. \n\nPlease do NOT touch/move the microphone. \n\nThere will be a black cross on the screen, keep your eyes on it during recording. \n When you are finished speaking, press ENTER again to stop recording. \n\n\nPress ENTER to begin.",
-    font='Arial',
-    pos=[0, 0], height=36, color='black', units='pix', colorSpace='rgb',
-    wrapWidth=win.size[0] * 0.9
-)
-
-# Instruction: Finish
-finishInstructions = visual.TextStim(
-    win=win,
-    name='instrFinish',
-    text="Thank you for your participation! \n\n\n\n\n Please let the experimenter know you have finished!",
-    font='Arial',
-    pos=[0, 0], height=36, color='black', units='pix', colorSpace='rgb',
-    wrapWidth=win.size[0] * 0.9
-)
-
 #------------------------------ Stimuli -----------------------------------#
 
 # Get file names sheet
@@ -463,7 +401,7 @@ win.flip()
 
 # Record start time
 dfTimeStamps.loc[0, "storyStart_1"] = mainExpClock.getTime()
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
 
 # Play audio
 story1.play()
@@ -486,12 +424,12 @@ while story1.status == PLAYING or paused:
             # Pause the audio
             story1.pause()
             dfTimeStamps.loc[pause_count, 'storyPause_1'] = mainExpClock.getTime()
-            dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+            dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
             paused = True
         else:
             story1.play()
             dfTimeStamps.loc[pause_count, 'storyRestart_1'] = mainExpClock.getTime()
-            dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+            dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
             paused = False
             pause_count +=1
             
@@ -511,7 +449,7 @@ if ET == 1:
 
 # record end time
 dfTimeStamps.loc[0, "storyEnd_1"] = mainExpClock.getTime()
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # save partial data
+dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # save partial data
 
 # show instruction: between
 betweenInstructions.draw()
@@ -527,7 +465,7 @@ if ET == 1:
 
 # Record start time
 dfTimeStamps.loc[0, "storyStart_2"] = mainExpClock.getTime()
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
 
 # start second audio
 story2.play()
@@ -550,12 +488,12 @@ while story2.status == PLAYING or paused:
             # Pause the audio
             story2.pause()
             dfTimeStamps.loc[pause_count, 'storyPause_2'] = mainExpClock.getTime()
-            dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+            dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
             paused = True
         else:
             story2.play()
             dfTimeStamps.loc[pause_count, 'storyRestart_2'] = mainExpClock.getTime()
-            dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+            dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
             paused = False
             pause_count +=1
             
@@ -575,74 +513,12 @@ if ET == 1:
     
 # Record end time
 dfTimeStamps.loc[0, "storyEnd_2"] = mainExpClock.getTime()
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # Save partial data
+dfTimeStamps.to_csv(filename + '_encoding_timestamps.csv', index=False)  # Save partial data
 
 # show instruction: break
 breakInstructions.draw()
 win.flip()
 keys = event.waitKeys(keyList=["return"])
-
-# run ET calibration again after break
-if ET == 1:
-    start_calibration()
-
-# show instruction: record intro
-recordIntroInstructions.draw()
-win.flip()
-keys = event.waitKeys(keyList=["return"])
-
-# show instruction: record ready
-recordReadyInstructions.draw()
-win.flip()
-keys = event.waitKeys(keyList=["return"])
-
-# show instruction: record begin
-recordBeginInstructions.draw()
-win.flip()
-keys = event.waitKeys(keyList=["return"])
-
-# ==================================
-# Send recording start message to ET
-# ==================================
-if ET == 1:
-    tracker.sendMessage("REC_START")
-    dfTimeStamps.loc[0, 'startETVoiceRec'] = mainExpClock.getTime()
-
-# start recording
-mic.start()
-
-# record start time
-dfTimeStamps.loc[0,'recordStart'] = mainExpClock.getTime()
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # save partial data
-
-# show central white dot during recording
-crossCentralBlack.draw()
-win.flip()
-keys = event.waitKeys(keyList=["return"])
-
-# stop recording
-mic.stop()
-
-# record end time
-dfTimeStamps.loc[0,'recordEnd'] = mainExpClock.getTime()
-dfTimeStamps.to_csv(filename + '_timestamps.csv', index=False)  # save data
-
-# ==================================
-# Send recording end message to ET
-# ==================================
-if ET == 1:
-    tracker.sendMessage("REC_END")
-    dfTimeStamps.loc[0, 'endETVoiceRec'] = mainExpClock.getTime()
-
-# save audio
-audioClip = mic.getRecording()
-audioClip.save(filename + '.wav')
-
-# show instruction: finish
-finishInstructions.draw()
-win.flip()
-keys = event.waitKeys(keyList=["g"])
-
 
 # --------------------- Post-Experiment Settings --------------------------#
 # Stop recording ET
@@ -662,7 +538,7 @@ io.quit()
 if ET == 1:
     edf_root = ''
     edf_file = edf_root + '/' + filename + '.EDF'
-    os.rename('et_data.EDF', edf_file)
+    os.rename('storyfest_eyetracker_encoding.EDF', edf_file)
 
 # Close experiment
 core.quit()
