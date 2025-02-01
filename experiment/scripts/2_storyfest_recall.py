@@ -150,6 +150,10 @@ keyboard = io.getDevice('keyboard')
 kb = Keyboard(waitForStart=True) # JP: clock?
 tracker = io.getDevice('tracker')
 
+# Establish connection with eye tracker
+if ET == 1:
+    tracker.setConnectionState(True)
+
 # =====================
 # Quit experiment setup
 # =====================
@@ -293,6 +297,7 @@ keys = event.waitKeys(keyList=["return"])
 # ==================================
 if ET == 1:
     tracker.sendMessage("REC_START")
+    tracker.setRecordingState(True)
     dfTimeStamps.loc[0, 'startETVoiceRec'] = mainExpClock.getTime()
 
 # start recording
@@ -328,7 +333,7 @@ audioClip.save(filename + '.wav')
 # show instruction: finish
 finishInstructions.draw()
 win.flip()
-keys = event.waitKeys(keyList=["g"])
+keys = event.waitKeys(keyList=["return"])
 
 
 # --------------------- Post-Experiment Settings --------------------------#
@@ -347,9 +352,16 @@ io.quit()
 
 # Explort participant ET data
 if ET == 1:
-    edf_root = ''
-    edf_file = edf_root + '/' + filename + '.EDF'
-    os.rename('storyfest_eyetracker_recall.EDF', edf_file)
+    edf_source = os.path.join(_thisDir, 'et_data.EDF')
+    edf_target = os.path.join(_thisDir, '..', 'data', 'storyfest_eyetracker_recall.EDF')
+    
+    edf_path = os.path.dirname(edf_target)
+    if not os.path.exists(edf_path):
+        os.makedirs(edf_path)
+    
+    if os.path.exists(edf_source):
+        os.rename(edf_source, edf_target)
+
 
 # Close experiment
 core.quit()

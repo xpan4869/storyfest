@@ -34,6 +34,7 @@ ET = 1
 # ====================================
 # Toggle kill switch:
 # 0=No kill switch, 1=Yes kill switch
+# To kill, press 'k'
 # ====================================
 KS = 1
 
@@ -133,6 +134,10 @@ io = launchHubServer(window=win, **devices_config)
 keyboard = io.getDevice('keyboard')
 kb = Keyboard(waitForStart=True) # JP: clock?
 tracker = io.getDevice('tracker')
+
+# Establish connection with eye tracker
+if ET == 1:
+    tracker.setConnectionState(True)
 
 # =====================
 # Quit experiment setup
@@ -389,6 +394,7 @@ keys = event.waitKeys(keyList=["return"])
 # ==============================
 if ET == 1:
     tracker.sendMessage("ALL_STORY_START")
+    tracker.setRecordingState(True)
     dfTimeStamps.loc[0, 'startETallstory'] = mainExpClock.getTime()
 
 # ==============
@@ -536,9 +542,15 @@ io.quit()
 
 # Explort participant ET data
 if ET == 1:
-    edf_root = ''
-    edf_file = edf_root + '/' + filename + '.EDF'
-    os.rename('storyfest_eyetracker_encoding.EDF', edf_file)
+    edf_source = os.path.join(_thisDir, 'et_data.EDF')
+    edf_target = os.path.join(_thisDir, '..', 'data', 'storyfest_eyetracker_encoding.EDF')
+    
+    edf_path = os.path.dirname(edf_target)
+    if not os.path.exists(edf_path):
+        os.makedirs(edf_path)
+    
+    if os.path.exists(edf_source):
+        os.rename(edf_source, edf_target)
 
 # Close experiment
 core.quit()
