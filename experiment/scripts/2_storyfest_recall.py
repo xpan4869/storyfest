@@ -116,7 +116,7 @@ if REC == 1:
                         sampleRateHz=48000,
                         device=recordingDevicesList[0],
                         channels=1,
-                        maxRecordingSize=300000,
+                        maxRecordingSize=300000 * 2,
                         audioRunMode=0
     )
 
