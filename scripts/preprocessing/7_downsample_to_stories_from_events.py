@@ -6,7 +6,7 @@ import scipy.stats as stats
 
 # ---------- Configuration ---------- #
 EXP_TYPE = "encoding" # encoding or recall
-SUBJ_IDS = range(1034,1043)
+SUBJ_IDS = range(1001,1046)
 
 # Paths
 os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')

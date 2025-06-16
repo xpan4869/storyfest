@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu)
-# Last Edited: December 19, 2024
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: June 8, 2025
 # Description: The script downsamples the clean (interpolated) pupil data to 50 Hz
 # Downsampled via averaging (i.e., taking the mean of every N samples)
 
@@ -11,7 +11,7 @@ import math
 # ------------------ Hardcoded parameters ------------------ #
 os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
-EXP_TYPE = "encoding" # "encoding" or "recall"
+EXP_TYPE = "recall" # "encoding" or "recall"
 SDSCORE = 2
 DAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/3_interpolated/' + EXP_TYPE))
 SAVE_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/4_downsampled/' + EXP_TYPE))
@@ -30,7 +30,7 @@ SAMPLE_RATE_MS = 1/SAMPLE_RATE_HZ * 1000 # 500 Hz in ms (2 ms)
 DOWNSAMPLE_RATE_HZ = int(50) # Downsample to 50 Hz
 DOWNSAMPLE_RATE_MS = 1/DOWNSAMPLE_RATE_HZ * 1000 # 50 Hz in ms (20 ms)
 
-SUBJ_IDS = range(1034,1043)
+SUBJ_IDS = range(1001,1046)
 
 # ------------------- Main ------------------ #
 for run in runs:

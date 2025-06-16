@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu)
-# Last Edited: March 28, 2025
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: June 13, 2025
 # Description: This script performs steps (3) and (4) described in Murphy et al., 2014 (Hum. Brain Mapp.)
 #              Essentially, it removes noisy samples while performing downsampling to align pupil data to brain data
 
@@ -60,18 +60,17 @@ SDSCORE = 2
 # For example, if ARTIFACT_THRESHOLD = 0.4, an epoch with >40% artifactual samples is considered noisy
 ARTIFACT_THRESHOLD = 0.4 # Range: 0-1
 
-SUBJ_IDS = range(1001,1043)
+SUBJ_IDS = range(1001,1046)
 
 # ---------- Filtering Settings ---------- #
 APPLY_FILTER = True            # Set to False to skip filtering
 FILTER_TYPE = "lowpass"          # Options: "lowpass", "bandpass"
-LOWCUT_HZ = None               # Only used if FILTER_TYPE is "bandpass"
-HIGHCUT_HZ = 4                 # Used in both "lowpass" and "bandpass"
+LOWCUT_HZ = None                 # Only used if FILTER_TYPE is "bandpass"
+HIGHCUT_HZ = 0.3                # Used in both "lowpass" and "bandpass"
 FILTER_ORDER = 3
 
 # ------------------ Plot settings ------------------ # 
 plt.figure(figsize=(12, 3))
-#THIS_SUB = int(1010) # Manually define which subject you want to view
 
 # ------------------ Define functions ------------------ # 
 def calc_clean_mean(arr, z, artifact_threshold):
@@ -109,6 +108,16 @@ def calc_clean_mean(arr, z, artifact_threshold):
     return mean_clean
 
 def linear_interpolate_epoch(data, idx):
+    """
+    Interpolate rejected epochs in downsampled TR-level data (after artifact rejection)
+
+    Input:
+    - data (list of np arrays): contains the epoch sample
+    - idx (int): contains the index of the rejected epoch
+
+    Output:
+    - data: epoch
+    """
     if 0 < idx < len(data) - 1:
         left = data[idx - 1]
         right = data[idx + 1]
@@ -145,49 +154,6 @@ def tolerant_mean(arrs):
     
     return arr.mean(axis=-1), sem
 
-def interpolate_blinks(sBlink_idx, eBlink_idx, pupilSize):
-    """
-    This function performs linear interpolation to estimate pupil size during blinks
-    
-    Params:
-    - sblink (numpy array): index of the start of blink
-    - eblink (numpy array): index of the end of blink
-    - pupilSize (numpy array): pupil size
-        
-    Returns:
-    - pupilSize (numpy array) : modified pupil size with interpolated values for blinks
-    
-    """
-    
-    # 1 point before the start of blink
-    sBlink_minus1 = sBlink_idx - 1
-    
-    # 1 point after the end of blink (blink ends at eBlink_idx + 1)
-    eBlink_plus1 = eBlink_idx + 2
-    
-    # Two points must be present for interpolations 
-    # If the data begins or ends with a blink, you cannot interpolate
-    if ((eBlink_plus1 < len(pupilSize)) and (sBlink_minus1 >= 0)):
-        
-        # Interpolate over these samples
-        blink_data = np.array(pupilSize[sBlink_minus1:eBlink_plus1])
-
-        # Pupil size right before and after blink
-        toInterp = [blink_data[0], blink_data[-1]]
-
-        # Timepoint to interpolate over
-        toInterp_TP = [0, len(blink_data)-1] # x-coordinate of query points
-        
-        # Perform interpolation
-        afterInterpolate = np.interp(range(len(blink_data)), toInterp_TP, toInterp)
-        afterInterpolate = afterInterpolate[1:-1] # Remove the point before and after blink
-        
-        # Put the interpolated data back in
-        pupilSize[sBlink_idx:eBlink_idx+1] = afterInterpolate
-        
-    return pupilSize
-
-
 def lowpass_filter(data, sample_rate, cutoff, order):
     nyquist = 0.5 * sample_rate
     normal_cutoff = cutoff / nyquist
@@ -207,14 +173,10 @@ def bandpass_filter(data, sample_rate, lowcut, highcut, order):
 
 
 # ------------------- Main ------------------ #
-# Create empty dictionary to store everyone's pupil data
-#pupil_allSub = {}
-
-# Store pupil data by group number
-group_data = {1: [], 2: [], 3: []}
-subject_data = {}  # Will store z-scored pupil data per subject
-
 for run in runs:
+    # Store pupil data by group number
+    group_data = {1: [], 2: [], 3: []}
+    subject_data = []  # Will store z-scored pupil data per subject
     # Set current paths
     if EXP_TYPE == "encoding":
         current_dat = os.path.join(DAT_PATH, run)
@@ -225,8 +187,10 @@ for run in runs:
     
     # Ensure output directory exists
     os.makedirs(current_save, exist_ok=True)
-    
+    # Create empty array to store time-locked pupil data; Segment the data into 1-second epochs (segments)
+    pupilTimeLocked = {}
     for sub in SUBJ_IDS:
+        pupilTimeLocked[sub] = []
         group_num = (sub - 1000) % 3
         if group_num == 0:
             group_num = 3
@@ -236,7 +200,6 @@ for run in runs:
         if not os.path.exists(input_file):
             print(f"Missing file: {input_file}")
             continue
-        print("FILE NOT MISSING")
         dat = pd.read_csv(input_file)
         
         pupilSize = np.array(dat['pupilSize_clean'])
@@ -245,11 +208,9 @@ for run in runs:
         # Plotting
         # ==========
         # Optional filtering before z-scoring
-
         if APPLY_FILTER:
             try:
                 if FILTER_TYPE == "lowpass":
-                    print(f"Applied lowpass filter to Subject {sub}, cutoff={HIGHCUT_HZ} Hz")
                     filtered_pupil = lowpass_filter(pupilSize, CURRENT_SAMPLE_HZ, HIGHCUT_HZ, FILTER_ORDER)
                 elif FILTER_TYPE == "bandpass":
                     filtered_pupil = bandpass_filter(pupilSize, CURRENT_SAMPLE_HZ, LOWCUT_HZ, HIGHCUT_HZ, FILTER_ORDER)
@@ -266,155 +227,83 @@ for run in runs:
             print("UNFILTERED!")
             filtered_pupil = pupilSize  # fallback to unfiltered if filtering is off
         
-        # Debug check if filtering changed the signal
-        if not np.allclose(pupilSize, filtered_pupil):
-            print(f"Subject {sub} filtered successfully — signal changed.")
-        else:
-            print(f"WARNING: Subject {sub} — filter had no effect!")
-
-        # Create empty array to store time-locked pupil data
-        pupilTimeLocked = []
         for i in range(0, len(filtered_pupil), SAMPLES_PER_EPOCH):
             pupilSize_epoch = filtered_pupil[i:i+SAMPLES_PER_EPOCH]
             if len(pupilSize_epoch) < SAMPLES_PER_EPOCH:
                 continue
 
             # Keep the mean without additional artifact rejection
-            epoch_mean = np.mean(pupilSize_epoch)
-            pupilTimeLocked.append(epoch_mean)
-
-        # # Segment the data into 1-second epochs (segments)
-        # for i in range(0, len(filtered_pupil), SAMPLES_PER_EPOCH):
-        #     pupilSize_epoch = filtered_pupil[i:i+SAMPLES_PER_EPOCH]
-        #     if len(pupilSize_epoch) < SAMPLES_PER_EPOCH:
-        #         continue
-            
-        #     # Identify the artifactual samples within each epoch
-        #     # Calculate the mean pupil diameter for each epoch from the remaining non-artifactual samples
-        #     epoch_clean = calc_clean_mean(pupilSize_epoch, SDSCORE, ARTIFACT_THRESHOLD)
-            
-        #     # Append the mean pupil diameter to the time-locked array
-        #     pupilTimeLocked.append(epoch_clean)
-        #    # pupilTimeLocked = np.append(pupilTimeLocked, epoch_clean)
+            # Identify the artifactual samples within each epoch
+            # Calculate the mean pupil diameter for each epoch from the remaining non-artifactual samples
+            epoch_clean = calc_clean_mean(pupilSize_epoch, SDSCORE, ARTIFACT_THRESHOLD)
+            # Append the mean pupil diameter to the time-locked array
+            pupilTimeLocked[sub].append(epoch_clean)
                 
-        pupilTimeLocked = np.array(pupilTimeLocked)
+        pupilTimeLocked[sub] = np.array(pupilTimeLocked[sub])
         # Create a TR column
-        TR_index = np.arange(1, len(pupilTimeLocked)+1)
+        TR_index = np.arange(1, len(pupilTimeLocked[sub])+1)
 
         # Interpolation for zero-value epochs (bad segments)
-        zero_idx = np.where(pupilTimeLocked == 0)[0]
+        # Get the index of the zero epochs
+        zero_idx = np.where(pupilTimeLocked[sub] == 0)[0]
         for idx in zero_idx:
-            if 0 < idx < len(pupilTimeLocked) - 1:
-                pupilTimeLocked = linear_interpolate_epoch(pupilTimeLocked, idx)
+            if 0 < idx < len(pupilTimeLocked[sub]) - 1:
+                pupilTimeLocked[sub] = linear_interpolate_epoch(pupilTimeLocked[sub], idx)
 
-    #     # If there are epochs with a zero (i.e., epochs with >40% artifactual samples), 
-    #     # replace the mean pupil diameter for that epoch via linear interpolation across adjacent clean epochs  
-    #    # print("Subject", sub, ";", np.any(pupilTimeLocked == 0))
-    #     skip_interpolation = False
-        
-    #     if np.any(pupilTimeLocked == 0) == True:
-            
-    #         # Get the index of the zero epochs
-    #         zero_idx = np.where(pupilTimeLocked == 0)[0]
-            
-    #         # If the data begins or ends with a zero epoch, you cannot interpolate
-    #         if 0 in zero_idx or (len(pupilTimeLocked) - 1) in zero_idx:
-    #             skip_interpolation = True
-    #         else:
-    #             for idx in zero_idx:
-    #                 # Get the start and end of the zero epoch
-    #                 start = idx
-    #                 end = idx + 1
-                    
-    #                 # Interpolate over the zero epoch
-    #                 if start > 0 and end < len(pupilTimeLocked):
-    #                     left = pupilTimeLocked[start - 1]
-    #                     right = pupilTimeLocked[end]
-    #                     pupilTimeLocked[start:end] = np.linspace(left, right, end - start)
-    #                # pupilTimeLocked = interpolate_blinks(start, end, pupilTimeLocked)
-                    
-        # # Save data for each subject
-        # df = pd.DataFrame({'TR': TR_index, 'pupilSize': pupilTimeLocked})
-        # output_file = os.path.join(current_save, f"{sub}_{group_num}_{SDSCORE}SD_downsample_to_sec_{EXP_TYPE}.csv")
-        # df.to_csv(output_file, index=False)
-
-        
-        # Now z-score the (filtered or unfiltered) data
-        pupil_z = stats.zscore(filtered_pupil)
-        # Standardize pupil data
-       # pupil_z = stats.zscore(pupilTimeLocked)
+        # Now z-score the (filtered or unfiltered) data; Standardize pupil data
+        pupil_z = stats.zscore(pupilTimeLocked[sub])
 
         # Save z-scored data into group-wise dictionary
         group_data[group_num].append(pupil_z)
-        subject_data[sub] = {
+        subject_data.append({
+            'sub': sub,
             'group_num': group_num,
             'pupil_z': pupil_z
-        }
-        
-        # Compute group means once per group
-        # group_means = {}
-        # for group_num, arr_list in group_data.items():
-        #     if not arr_list:
-        #         continue
-        #     max_len = max(len(arr) for arr in arr_list)
-        #     group_arr = np.vstack([
-        #         np.pad(arr, (0, max_len - len(arr)), constant_values=np.nan)
-        #         for arr in arr_list
-        #     ])
-        #     group_means[group_num] = np.nanmean(group_arr, axis=0)
+        })
+    # Compute group means once per group
+    group_means = {}
+    for group_num, arr_list in group_data.items():
+        if not arr_list:
+            continue
+        max_len = max(len(arr) for arr in arr_list)
+        group_arr = np.vstack([
+            np.pad(arr, (0, max_len - len(arr)), constant_values=np.nan) for arr in arr_list])
+        group_means[group_num] = np.nanmean(group_arr, axis=0)
 
-       # for sub, data in subject_data.items():
-        print("sub: ", sub)
-        group_num = subject_data[sub]['group_num']
-        pupil_z = subject_data[sub]['pupil_z']
-        sub_TR = np.arange(1, len(pupil_z) + 1)
-        # # Only compute and plot group mean for encoding
-        if EXP_TYPE == "encoding":
-            # Compute group mean
-            group_arrs = group_data[group_num]
-            max_len = max(len(arr) for arr in group_arrs)
-            group_arr = np.ma.vstack([
-                np.ma.masked_invalid(np.pad(arr, (0, max_len - len(arr)), constant_values=np.nan))
-                for arr in group_arrs
-            ])
-            group_mean = np.nanmean(group_arr, axis=0)
-            TR_plot = np.arange(1, max_len + 1)
+    for i, _ in enumerate(subject_data):
+        sub = subject_data[i]['sub']
+        group_num = subject_data[i]['group_num']
+        pupil_z2 = subject_data[i]['pupil_z']
+        subject_len = len(pupil_z2)
+        sub_TR = np.arange(1, subject_len + 1)
+        group_mean = group_means[group_num][:subject_len]  # truncate if longer
+        group_TR = np.arange(1, subject_len + 1)
 
-        # Plot        
-        # Add debug plot
-    # if sub == SUBJ_IDS[0]:  # Plot for first subject
         plt.figure(figsize=(12, 4))
         plt.plot(stats.zscore(pupilSize), label='Raw (z)')
         plt.plot(stats.zscore(filtered_pupil), label='Filtered (z)')
 
-        # plt.plot(pupilSize[:500], label='Raw')
-        # plt.plot(filtered_pupil[:500], label='Filtered')
-        plt.title(f"Filter Debug - Sub {sub}")
+        plt.title(f"Filter Debug - Sub {sub} {run}")
         plt.legend()
         plt.savefig(os.path.join(current_save, f"filter_debug_{run}_{sub}.png"))
         plt.close()
 
         plt.figure(figsize=(12, 3))
-        plt.plot(sub_TR, pupil_z, color='black', linewidth=1, label=f'Subject {sub}')
-        if EXP_TYPE == "encoding":
-            plt.plot(np.arange(1, len(group_mean) + 1), group_mean, color='blue', linewidth=2, label=f'Group {group_num} Mean')
+        plt.plot(sub_TR, pupil_z2, color='black', linewidth=2, label=f'Subject {sub}')
+        plt.plot(group_TR, group_mean, color='blue', linewidth=1, label=f'Group {group_num} Mean')
         plt.xlabel('Time (TR)')
         plt.ylabel('Pupil Size (z-scored)')
-        plt.title(f'Subject {sub} (Group {group_num}) - Time-Locked Pupil Data')
+        plt.title(f'Subject {sub} (Group {group_num}) {run} - Time-Locked Pupil Data')
         plt.legend()
-
-        # Determine run for saving
-        run_folder = run if run is not None else ""
-        plot_path = os.path.join(current_save, f"{sub}_{group_num}_event_plot.png")
+        plot_path = os.path.join(current_save, f"{sub}_{group_num}_{run}_plot.png")
         plt.savefig(plot_path, dpi=300)
         plt.close()
-        print(f"Sub {sub}: Mean pupil (first 5 values): {pupilTimeLocked[:5]}")
+
         # Save CSV
         df = pd.DataFrame({
-            'TR': np.arange(1, len(pupilTimeLocked) + 1),
-            'pupilSize': pupilTimeLocked
+            'TR': np.arange(1, len(pupilTimeLocked[sub]) + 1),
+            'pupilSize': pupilTimeLocked[sub]
         })
-        output_file = os.path.join(current_save, f"{sub}_{group_num}_{SDSCORE}SD_downsample_to_sec_{EXP_TYPE}.csv")
+        output_file = os.path.join(current_save, f"{sub}_{group_num}_{run}_{FILTER_TYPE}_{SDSCORE}SD_downsample_to_sec_{EXP_TYPE}.csv")
         df.to_csv(output_file, index=False)
         print(f"Saved: {output_file}")
-

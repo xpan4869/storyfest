@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu)
-# Last Edited: December 17, 2024
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: June 8, 2025
 # Description: The script calculated group mean pupil dilation and excludes noisy participants
 # Noise is calculated based on the "derivative" (i.e., change in pupil size relative to the preceding sample; 
 #                                                aka,  sample N - sample N-1 pupil size)
@@ -19,7 +19,7 @@ import math
 # ------------------ Hardcoded parameters ------------------ #
 os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
-EXP_TYPE = "encoding" # "encoding" or "recall"
+EXP_TYPE = "recall" # "encoding" or "recall"
 DAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/1_aligned/' + EXP_TYPE))
 
 # Standard score for identifying cutoffs (SDSCORE = 1, 2, 3, ...)
@@ -31,7 +31,7 @@ SAVE_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processe
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
     
-SUBJ_IDS = (1034,1043)
+SUBJ_IDS = range(1001,1046)
 
 if EXP_TYPE == "encoding":
     runs = ['run_1', 'run_2']
@@ -171,8 +171,10 @@ for run in runs:
         else:
             output_file = os.path.join(current_save_path, f"{sub}_{group_num}_valid_{EXP_TYPE}_{SDSCORE}SD.csv")
             dat.to_csv(output_file, index=False)
-            # encoding 2 SD: Excluded pts 1005, 1007, 1008, 1009, 1011, 1014, 1036
-            # recall 2 SD: Excluded pts 1002, 1005, 1016, 1018, 1019, 1020, 1022, 1024, 1028, 1035, 1036, 1041
+            # encoding 2 SD run_1: Excluded pts 1005, 1007, 1008, 1009, 1011, 1014, 1028, 1036, 1042
+            # encoding 2 SD run_2: Excluded pts 1002, 1005, 1007, 1008, 1009, 1011, 1013, 1014, 1016, 1022, 1036, 1042
+            # encoding 2 SD overlap: Excluded pts 1005, 1007, 1008, 1009, 1011, 1014, 1036, 1042
+            # recall 2 SD: Excluded pts 1002, 1004, 1005, 1007, 1009, 1012, 1014, 1016, 1028
             # have to exclude pts 1001, 
 
 

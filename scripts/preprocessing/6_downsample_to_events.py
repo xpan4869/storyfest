@@ -1,3 +1,11 @@
+# Authors: Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: June 11, 2025
+# Description: This script downsamples pupil data to stories.
+
+# Steps:
+# 1. Load downsampled (1 Hz; sampled every 1 s) pupil data
+# 2. Compute event-level average pupil size
+
 import os
 import pandas as pd
 import numpy as np
@@ -8,7 +16,7 @@ import datetime
 # ---------- Configuration ---------- #
 EXP_TYPE = "encoding" # "encoding" or "recall"
 SAMPLE_HZ = 1 #50
-SUBJ_IDS = range(1001,1043) # keep range from 1001
+SUBJ_IDS = range(1001,1046) # keep range from 1001
 
 # Paths
 os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')

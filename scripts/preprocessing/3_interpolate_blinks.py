@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu)
-# Last Edited: December 17, 2024
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: June 8, 2025
 # Description: The script interpolates over blinks (detected by the Eyelink blink detection algorithm) and missing data points
 
 # Steps:
@@ -19,10 +19,10 @@ import mat73 # to load .mat files in MATLAB v7.3
 # ------------------ Hardcoded parameters ------------------ #
 os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
-EXP_TYPE = "recall" # "encoding" or "recall"
+EXP_TYPE = "encoding" # "encoding" or "recall"
 
 # Standard score cutoffs
-SDSCORE = 2 #2
+SDSCORE = 2 
 
 DAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/2_valid_pts/' + EXP_TYPE, str(SDSCORE) + "SD"))
 MAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/2_mat/' + EXP_TYPE))
@@ -36,7 +36,7 @@ if EXP_TYPE == "encoding":
 else:
     runs = [None]
 
-SUBJ_IDS = range(1034,1043)
+SUBJ_IDS = range(1001,1046)
 WINSIZE = 1000 ## cap for ms needed for interpolation
 SAMPLE_RATE = int(500) # Sampling frequency/rate(Hz)
 

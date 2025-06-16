@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu)
-# Last Edited: December 16, 2024
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
+# Last Edited: June 8, 2025
 # Description: The script aligns pupil data to stimulus presentation and excludes non-encoding data
 
 import numpy as np
@@ -18,7 +18,7 @@ SAVE_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processe
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
-SUBJ_IDS = (1034,1043)
+SUBJ_IDS = range(1001,1046)
 SAMPLING_RATE = 500 # Hz
 # PUPIL_INFO = Area (Area or Diameter)
 
@@ -150,4 +150,5 @@ for sub in SUBJ_IDS:
         filename = os.path.join(SAVE_PATH, str(sub) + "_" + str(group_num) + "_aligned_" + EXP_TYPE + "_ET.csv")
         pd.DataFrame({'pupilSize': pupilSize_encoding, 'time_in_ms': encoding_time, 'time_in_ms_corrected': encoding_time_corrected}).to_csv(filename, index=False)
 
-
+# Encoding: no input file for pts 1033
+# Recall: no input file for pts 1008, 1010, 1022, 1034
