@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
-# Last Edited: June 8, 2025
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu), Yolanda Pan (xpan02@uchicago.edu)
+# Last Edited: June 30, 2025
 # Description: The script calculated group mean pupil dilation and excludes noisy participants
 # Noise is calculated based on the "derivative" (i.e., change in pupil size relative to the preceding sample; 
 #                                                aka,  sample N - sample N-1 pupil size)
@@ -13,13 +13,11 @@
 import numpy as np
 import pandas as pd
 import os
-import scipy.stats as stats
-import math
 
 # ------------------ Hardcoded parameters ------------------ #
-os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
 _THISDIR = os.getcwd()
-EXP_TYPE = "recall" # "encoding" or "recall"
+EXP_TYPE = "encoding" # "encoding" or "recall"
 DAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/1_aligned/' + EXP_TYPE))
 
 # Standard score for identifying cutoffs (SDSCORE = 1, 2, 3, ...)
@@ -94,91 +92,46 @@ def calc_prop_noisy(pupil_diff, cutoff):
     
     return prop_noisy
 
-# ------------------ Initialize arrays ------------------ #
-#pupil_diff_allsub = np.array([]) # To store everyone's derivative data
-
 # ------------------- Main ------------------ #
 for run in runs:
-    # Configure paths for current run
-    if EXP_TYPE == "encoding":
-        current_dat_path = os.path.join(DAT_PATH, run)
-        current_save_path = os.path.join(SAVE_PATH, run)
-    else:
-        current_dat_path = DAT_PATH
-        current_save_path = SAVE_PATH
-
+    current_dat_path = os.path.join(DAT_PATH, run)
+    current_save_path = os.path.join(SAVE_PATH, run)
     os.makedirs(current_save_path, exist_ok=True)
 
-    # Aggregate derivatives across all subjects for the current run/dataset
-    pupil_diff_allsub = np.array([]) # To store everyone's derivative data
+    pupil_diff_allsub = []
 
     for sub in SUBJ_IDS:
-        group_num = (sub - 1000) % 3
-        if group_num == 0:
-            group_num = 3
-        if EXP_TYPE == "encoding":
-            input_file = os.path.join(current_dat_path, f"{sub}_{group_num}_aligned_{EXP_TYPE}_{run}_ET.csv")
-        else:
-            input_file = os.path.join(current_dat_path, f"{sub}_{group_num}_aligned_{EXP_TYPE}_ET.csv")
-        
+        input_file = os.path.join(current_dat_path, f"{sub}_aligned_{run}.csv")
         if not os.path.exists(input_file):
-            print(f"No Input File for Participant {sub}.")
+            print(f"No Input File for Participant {sub}: {input_file}")
             continue
 
-        # Load aligned data
-        dat = pd.read_csv(input_file)
-        pupil_raw = dat['pupilSize']
-        
-        # Drop invalid samples
-        pupil_raw = pupil_raw.dropna()  
-
-        # Calculate the "derivative"
-        pupil_diff = calculate_derivative(pupil_raw)
-        
-        # Concatenate all participants' data to create a distribution
-        pupil_diff_allsub = np.append(pupil_diff_allsub, pupil_diff)
-        
-    # Find the cutoff values from the distribution
-    cutoff = create_dist_find_cutoff(pupil_diff_allsub, SDSCORE)
-
-    for sub in SUBJ_IDS:
-        group_num = (sub - 1000) % 3
-        if group_num == 0:
-            group_num = 3
-        if EXP_TYPE == "encoding":
-            input_file = os.path.join(current_dat_path, f"{sub}_{group_num}_aligned_{EXP_TYPE}_{run}_ET.csv")
-        else:
-            input_file = os.path.join(current_dat_path, f"{sub}_{group_num}_aligned_{EXP_TYPE}_ET.csv")
-        
-        if not os.path.exists(input_file):
-            print(f"No Input File for Participant {sub}.")
-            continue
-
-        # Load aligned data
         dat = pd.read_csv(input_file)
         pupil_raw = dat['pupilSize'].dropna()
-        
-        # Calculate the "derivative"
         pupil_diff = calculate_derivative(pupil_raw)
-        
-        # Calculate the proportion of noisy data points
+        pupil_diff_allsub.extend(pupil_diff)
+
+    cutoff = create_dist_find_cutoff(np.array(pupil_diff_allsub), SDSCORE)
+
+    for sub in SUBJ_IDS:
+        input_file = os.path.join(current_dat_path, f"{sub}_aligned_{run}.csv")
+        if not os.path.exists(input_file):
+            continue
+
+        dat = pd.read_csv(input_file)
+        pupil_raw = dat['pupilSize'].dropna()
+        pupil_diff = calculate_derivative(pupil_raw)
         prop_noisy = calc_prop_noisy(pupil_diff, cutoff)
-    
+
+        group_num = (sub - 1000) % 3 or 3
         if prop_noisy >= 25:
-            print(f"Participant {sub} excluded. {prop_noisy:.2f}% of the data are noisy :( ")
-            
-        # Save non-noisy participants' data
+            print(f"{sub} excluded: {prop_noisy:.2f}% noisy")
         else:
-            output_file = os.path.join(current_save_path, f"{sub}_{group_num}_valid_{EXP_TYPE}_{SDSCORE}SD.csv")
-            dat.to_csv(output_file, index=False)
-            # encoding 2 SD run_1: Excluded pts 1005, 1007, 1008, 1009, 1011, 1014, 1028, 1036, 1042
-            # encoding 2 SD run_2: Excluded pts 1002, 1005, 1007, 1008, 1009, 1011, 1013, 1014, 1016, 1022, 1036, 1042
-            # encoding 2 SD overlap: Excluded pts 1005, 1007, 1008, 1009, 1011, 1014, 1036, 1042
-            # recall 2 SD: Excluded pts 1002, 1004, 1005, 1007, 1009, 1012, 1014, 1016, 1028
-            # have to exclude pts 1001, 
-
-
-
-
-
-
+            outname = f"{sub}_{group_num}_valid_{run}_{SDSCORE}SD.csv"
+            dat.to_csv(os.path.join(current_save_path, outname), index=False)
+            print(f"{sub} included and saved to {outname}")
+            # 2D: 
+            # run_1: 1005 excluded: 28.84% noisy; 1007 excluded: 26.48% noisy; 1008 excluded: 30.17% noisy; 1009 excluded: 37.81% noisy; 1011 excluded: 27.91% noisy; 1014 excluded: 37.09% noisy; 1028 excluded: 29.67% noisy; 1036 excluded: 25.25% noisy
+            # aka. 1005, 1007, 1008, 1009, 1011, 1014, 1028, 1036
+            # run_2: 1005 excluded: 31.26% noisy; 1007 excluded: 26.69% noisy; 1008 excluded: 30.58% noisy; 1009 excluded: 38.83% noisy; 1011 excluded: 29.31% noisy; 1013 excluded: 27.92% noisy; 1014 excluded: 37.41% noisy; 1016 excluded: 28.81% noisy; 1022 excluded: 27.04% noisy
+            # aka. 1005, 1007, 1008, 1009, 1011, 1013, 1014, 1016, 1022

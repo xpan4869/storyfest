@@ -1,5 +1,5 @@
-# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu)
-# Last Edited: June 8, 2025
+# Authors: Kruthi Gollapudi (kruthig@uchicago.edu), Jadyn Park (jadynpark@uchicago.edu), Kumiko Ueda (kumiko@uchicago.edu), Yolanda Pan (xpan02@uchicago.edu)
+# Last Edited: July 2, 2025
 # Description: The script interpolates over blinks (detected by the Eyelink blink detection algorithm) and missing data points
 
 # Steps:
@@ -12,12 +12,9 @@
 import numpy as np
 import pandas as pd
 import os
-import scipy.io as sio
-import math
-import mat73 # to load .mat files in MATLAB v7.3
 
 # ------------------ Hardcoded parameters ------------------ #
-os.chdir('/Users/UChicago/CASNL/storyfest/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
 _THISDIR = os.getcwd()
 EXP_TYPE = "encoding" # "encoding" or "recall"
 
@@ -25,14 +22,14 @@ EXP_TYPE = "encoding" # "encoding" or "recall"
 SDSCORE = 2 
 
 DAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/2_valid_pts/' + EXP_TYPE, str(SDSCORE) + "SD"))
-MAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/2_mat/' + EXP_TYPE))
+BLINK_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/2_csv/' + EXP_TYPE))
 SAVE_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/3_interpolated/' + EXP_TYPE))
 
 if not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
 if EXP_TYPE == "encoding":
-    runs = ['run_1', 'run_2']
+    runs = ['run_1','run_2']
 else:
     runs = [None]
 
@@ -41,23 +38,6 @@ WINSIZE = 1000 ## cap for ms needed for interpolation
 SAMPLE_RATE = int(500) # Sampling frequency/rate(Hz)
 
 # ------------------ Define functions ------------------ # 
-def fetch_mat(mat_path, sub_id):
-    """
-    Grabs .mat file for a given subject and saves each struct as an array.
-    
-    Samples (1x1 Struct): contains time, posX, posY, pupilSize, etc.
-    Events (1x1 Struct): contains Messages (another Struct), Sblink, Eblink, etc.
-        Sblink: time of the start of the blink
-        Eblink: time of the start and end of the blink, and blink duration
-        Detailed description of the variables: http://sr-research.jp/support/EyeLink%201000%20User%20Manual%201.5.0.pdf
-    
-    """
-    mat = mat73.loadmat(os.path.join(mat_path, f"{sub_id}_{EXP_TYPE}_ET.mat"))
-    samples = mat['Samples']
-    events = mat['Events']
-        
-    return samples, events
-
 def interpolate_blinks(sBlink_idx, eBlink_idx, pupilSize):
     """
     This function performs linear interpolation to estimate pupil size during blinks
@@ -115,7 +95,7 @@ def id_zeros(arr):
     """
     
     # Create an array that is 1 where a is 0, and pad each end with an extra 0.
-    iszero = np.concatenate(([0], np.equal(arr, 0).view(np.int8), [0]))
+    iszero = np.concatenate(([0], np.equal(arr, 0).astype(np.int8), [0]))
     absdiff = np.abs(np.diff(iszero))
 
     # Runs start and end where absdiff is 1.
@@ -139,7 +119,7 @@ for run in runs:
         if group_num == 0:
             group_num = 3
         # Load aligned and validated data
-        input_file = os.path.join(current_dat_path, f"{sub}_{group_num}_valid_{EXP_TYPE}_{SDSCORE}SD.csv")
+        input_file = os.path.join(current_dat_path, f"{sub}_{group_num}_valid_{run}_{SDSCORE}SD.csv")
         if not os.path.exists(input_file):
             print(f"No Input File for Participant {sub}")
             continue
@@ -149,29 +129,30 @@ for run in runs:
         time_of_sample = np.array(dat['time_in_ms'])
         
         # Load .mat file to access Eyelink blink data
-        samples, events = fetch_mat(MAT_PATH, sub)
+        blink_path = os.path.join(BLINK_PATH, str(sub), 'blinks.csv')
+        events = pd.read_csv(blink_path)
         
         # ======================================================
         # Step 1. Interpolate over blinks, detected by Eyelink
         # ======================================================
         
         # Time of blink start
-        sBlink_time = events['Eblink']['start']
+        sBlink_time = events['start_time'].astype(float)
         
         # Time of blink end
-        eBlink_time = events['Eblink']['end']
+        eBlink_time = events['end_time'].astype(float)
         
         # Index of corresponding time in the pupil data
-        sBlink_idx = [np.where(time_of_sample == blink_time)[0][0] for blink_time in sBlink_time 
-                    # To prevent out of bounds error
-                    if np.where(time_of_sample == blink_time)[0].size > 0 and 
-                    np.where(time_of_sample == blink_time)[0].size < len(pupilSize)] 
-        
-        eBlink_idx = [np.where(time_of_sample == blink_time)[0][0] for blink_time in eBlink_time
-                    # To prevent out of bounds error
-                    if np.where(time_of_sample == blink_time)[0].size > 0 and
-                    np.where(time_of_sample == blink_time)[0].size < len(pupilSize)]
-        
+        sBlink_idx = []
+        for t in sBlink_time:
+            idx = np.argmin(np.abs(time_of_sample - t))
+            sBlink_idx.append(idx)
+
+        eBlink_idx = []
+        for t in eBlink_time:
+            idx = np.argmin(np.abs(time_of_sample - t))
+            eBlink_idx.append(idx)
+                
         # How many blinks?
         nBlinks = len(sBlink_idx)
         
@@ -185,13 +166,13 @@ for run in runs:
         elif sBlink_idx[0] > eBlink_idx[0] and len(sBlink_idx) == len(eBlink_idx):
             sBlink_idx.insert(0, 0)
             eBlink_idx.append(len(pupilSize))
-        
+
         # Interpolate over blinks
         pupilSize_blinks_removed = pupilSize.copy()
         
         for i in range(nBlinks):
             pupilSize_blinks_removed = interpolate_blinks(sBlink_idx[i], eBlink_idx[i], pupilSize_blinks_removed)
-                
+        
         # Add interpolated pupil data to the dataframe
         dat['pupilSize_noBlinks'] = pupilSize_blinks_removed
         
@@ -220,7 +201,7 @@ for run in runs:
         prop_missing_data = (np.sum(pupilSize_clean == 0)) / len(pupilSize_clean) * 100
         print("Subject", sub, "has", prop_missing_data, "% missing data points")
         
-        
         # Save clean pupil data
         output_file = os.path.join(current_save_path, f"{sub}_{group_num}_{SDSCORE}SD_interpolated_{EXP_TYPE}.csv")
         dat.to_csv(output_file, index=False)
+        
