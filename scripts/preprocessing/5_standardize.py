@@ -9,7 +9,7 @@ import pandas as pd
 from scipy.stats import zscore
 
 # ------------------ Hardcoded parameters ------------------ #
-os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Desktop/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
 EXP_TYPE = "encoding" # "encoding" or "recall"
 SDSCORE = 2
@@ -30,27 +30,27 @@ SUBJ_IDS = range(1001,1046)
 # ------------------ Filtering Function ------------------ #
 def standardize(pupil_array):
     """
-    Scales pupil values to the [-1, 1] range using min-max normalization.
+    Applies Z-score standardization: (x - mean) / std, with NaNs preserved.
 
     Parameters:
         pupil_array (array-like): 1D array or pandas Series of pupil size values.
 
     Returns:
-        np.ndarray: Scaled values in [-1, 1] with NaNs preserved.
+        np.ndarray: Z-scored values with NaNs preserved.
     """
     pupil_array = np.asarray(pupil_array)
     valid_mask = ~np.isnan(pupil_array)
 
-    scaled = np.full_like(pupil_array, np.nan, dtype=np.float64)
+    standardized = np.full_like(pupil_array, np.nan, dtype=np.float64)
     if np.any(valid_mask):
-        min_val = np.min(pupil_array[valid_mask])
-        max_val = np.max(pupil_array[valid_mask])
-        if max_val != min_val:
-            scaled[valid_mask] = 2 * (pupil_array[valid_mask] - min_val) / (max_val - min_val) - 1
+        mean_val = np.mean(pupil_array[valid_mask])
+        std_val = np.std(pupil_array[valid_mask])
+        if std_val != 0:
+            standardized[valid_mask] = (pupil_array[valid_mask] - mean_val) / std_val
         else:
-            scaled[valid_mask] = 0  # or keep as NaN if all values are the same
+            standardized[valid_mask] = 0  # or np.nan if all values are the same
 
-    return scaled
+    return standardized
 
 # ------------------- Main ------------------ #
 for run in runs:

@@ -12,7 +12,7 @@ import pandas as pd
 
 # ------------------ Hardcoded parameters ------------------ #
 # Set working directory to storyfest root (e.g., your repo path)
-os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data')
+os.chdir('/Users/yolandapan/Desktop/storyfest')
 _THISDIR = os.getcwd()
 
 EXP_TYPE = "encoding"  # Choose between "encoding" or "recall"

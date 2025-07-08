@@ -10,7 +10,7 @@ import os
 import math
 
 # ------------------ Hardcoded parameters ------------------ 
-os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Desktop/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
 EXP_TYPE = "encoding" # only "encoding"
 CSV_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/2_csv'))
@@ -39,7 +39,7 @@ def fetch_timestamps(csv_path, sub_id):
         'story2_start': get_timestamp(events, 'STORY_2_START'),
         'story2_end': get_timestamp(events, 'STORY_2_END'),
         'recording_start': get_timestamp(events, '!MODE RECORD'),
-        'recording_end': get_timestamp(events, 'RECORDING_END'),
+        'recording_end': get_timestamp(events, 'RECORDING_END'), # n/a
     }])
 
 

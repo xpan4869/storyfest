@@ -14,7 +14,7 @@ import pandas as pd
 import os
 
 # ------------------ Hardcoded parameters ------------------ #
-os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Desktop/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
 EXP_TYPE = "encoding" # "encoding" or "recall"
 

@@ -15,7 +15,7 @@ import pandas as pd
 import os
 
 # ------------------ Hardcoded parameters ------------------ #
-os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Desktop/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
 EXP_TYPE = "encoding" # "encoding" or "recall"
 DAT_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/3_processed/1_aligned/' + EXP_TYPE))

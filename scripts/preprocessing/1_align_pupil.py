@@ -12,7 +12,7 @@ import os
 import math
 
 # ------------------ Hardcoded parameters ------------------ #
-os.chdir('/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/scripts/preprocessing')
+os.chdir('/Users/yolandapan/Desktop/storyfest/scripts/preprocessing')
 _THISDIR = os.getcwd()
 EXP_TYPE = "encoding" # "encoding" or "recall"
 CSV_PATH = os.path.normpath(os.path.join(_THISDIR, '../../data/pupil/2_csv'))

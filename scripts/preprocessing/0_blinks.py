@@ -5,7 +5,7 @@
 import pandas as pd
 import os
 
-BASE_PATH = "/Users/yolandapan/Library/CloudStorage/OneDrive-TheUniversityofChicago/YC/storyfest-data/data/pupil/2_csv/encoding"
+BASE_PATH = "/Users/yolandapan/Desktop/storyfest/data/pupil/2_csv/encoding"
 SUBJ_IDS = range(1001, 1046)
 
 for sub in SUBJ_IDS:
